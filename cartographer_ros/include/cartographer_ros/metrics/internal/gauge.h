@@ -17,6 +17,7 @@
 #ifndef CARTOGRAPHER_ROS_METRICS_INTERNAL_GAUGE_H
 #define CARTOGRAPHER_ROS_METRICS_INTERNAL_GAUGE_H
 
+#include "absl/base/thread_annotations.h"
 #include <map>
 #include <string>
 
@@ -71,7 +72,7 @@ class Gauge : public ::cartographer::metrics::Gauge {
 
   absl::Mutex mutex_;
   const std::map<std::string, std::string> labels_;
-  double value_ GUARDED_BY(mutex_);
+  double value_ ABSL_GUARDED_BY(mutex_);
 };
 
 }  // namespace metrics

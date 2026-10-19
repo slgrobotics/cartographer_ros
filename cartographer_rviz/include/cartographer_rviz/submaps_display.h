@@ -17,6 +17,7 @@
 #ifndef CARTOGRAPHER_RVIZ_SRC_SUBMAPS_DISPLAY_H_
 #define CARTOGRAPHER_RVIZ_SRC_SUBMAPS_DISPLAY_H_
 
+#include "absl/base/thread_annotations.h"
 #include <map>
 #include <memory>
 #include <string>
@@ -97,7 +98,7 @@ class SubmapsDisplay
   std::unique_ptr<std::string> map_frame_;
   ::rviz_common::properties::StringProperty* tracking_frame_property_;
   Ogre::SceneNode* map_node_ = nullptr;  // Represents the map frame.
-  std::map<int, std::unique_ptr<Trajectory>> trajectories_ GUARDED_BY(mutex_);
+  std::map<int, std::unique_ptr<Trajectory>> trajectories_ ABSL_GUARDED_BY(mutex_);
   absl::Mutex mutex_;
   ::rviz_common::properties::BoolProperty* slice_high_resolution_enabled_;
   ::rviz_common::properties::BoolProperty* slice_low_resolution_enabled_;
