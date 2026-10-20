@@ -12,6 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
+
+See:
+
+* https://github.com/slgrobotics/cartographer_ros/blob/lyrical/README_Lyrical.md
+* https://github.com/slgrobotics/articubot_one/wiki/Jazzy-to-Lyrical-migration#cartographer-port
+* https://github.com/slgrobotics/cartographer
+
 ============================
 Cartographer ROS Integration
 ============================
