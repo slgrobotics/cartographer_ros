@@ -3,6 +3,8 @@
 > **Note:**
 > - if *Cartographer* is not present in your `/opt/ros/${ROS_DISTRO}/share/cartographer_ros` you can build it as described below.
 > - ROS2 *Lyrical* seems to distribute `/opt/ros/${ROS_DISTRO}/share/cartographer_ros_msgs` as binaries, but not the rest.
+> - put COLCON_IGNORE file in directories which you don't want to be built.
+
 
 ## Cartographer (core library)
 
@@ -34,6 +36,3 @@ cd ~/robot_ws
 colcon build --allow-overriding cartographer_ros_msgs
 source install/setup.bash
 ```
-
-**Note:** put COLCON_IGNORE file in directories which you don't want to be built.
-
