@@ -1,5 +1,9 @@
 # ROS 2 Lyrical compatibility changes
 
+> **Note:**
+> - if *Cartographer* is not present in your `/opt/ros/${ROS_DISTRO}/share/cartographer_ros` you can build it as described below.
+> - ROS2 *Lyrical* seems to distribute `/opt/ros/${ROS_DISTRO}/share/cartographer_ros_msgs` as binaries, but not the rest.
+
 ## Cartographer (core library)
 
 - Replaced legacy thread annotations (`GUARDED_BY`, `LOCKS_EXCLUDED`, and related macros) with their `ABSL_*` equivalents and explicitly included `absl/base/thread_annotations.h` for compatibility with the installed Abseil version.
@@ -21,6 +25,11 @@ mkdir -p ~/robot_ws/src
 cd ~/robot_ws/src
 git clone https://github.com/slgrobotics/cartographer.git -b lyrical
 git clone https://github.com/slgrobotics/cartographer_ros.git -b lyrical
+
+# At this point you may want to suppress building some of the packages:
+# cp cartographer_ros/docs/COLCON_IGNORE cartographer_ros/cartographer_ros_msgs/.  # because binary package is present
+# cp cartographer_ros/docs/COLCON_IGNORE cartographer_ros/cartographer_rviz/.      # on a "headless" robot with ROS2 Base
+
 cd ~/robot_ws
 colcon build --allow-overriding cartographer_ros_msgs
 source install/setup.bash
