@@ -37,3 +37,51 @@ cd ~/robot_ws
 colcon build --allow-overriding cartographer_ros_msgs
 source install/setup.bash
 ```
+## Headless Raspberry Pi 5 build notes
+
+Cartographer and `cartographer_ros` were built successfully on a Raspberry Pi 5 running Ubuntu Server 26.04.1 and ROS 2 Lyrical (ROS Base).
+
+### Package selection
+
+Keep both the `cartographer` core repository and this `cartographer_ros` repository under the workspace's `src` directory. On the headless robot, build only the core library and ROS integration:
+
+- Skip `cartographer_rviz`: RViz runs on a separate computer, so its plugin is unnecessary on the robot.
+- Skip `cartographer_ros_msgs`: use the matching binary package already installed under `/opt/ros/lyrical`.
+
+From the workspace's `src` directory:
+
+```bash
+cd ~/robot_ws/src
+cp cartographer_ros/docs/COLCON_IGNORE cartographer_ros/cartographer_ros_msgs/
+cp cartographer_ros/docs/COLCON_IGNORE cartographer_ros/cartographer_rviz/
+```
+
+These marker files tell colcon to ignore the two packages.
+
+Build from the workspace root:
+
+```bash
+cd ~/robot_ws
+source /opt/ros/lyrical/setup.bash
+colcon build --packages-up-to cartographer_ros
+source install/setup.bash
+```
+
+There is no need for `--allow-overriding cartographer_ros_msgs` when the source messages package is ignored.
+
+### Compiler output
+
+The successful Raspberry Pi builds produced substantial stderr output:
+
+- **GCC ARM ABI notes:** Eigen rotation types trigger messages about parameter passing changing in GCC 10.1 when C++17 is enabled. These are informational notes, not compilation errors.
+- **Deprecation warnings:** TF2's legacy `.h` headers, Abseil mutex locks constructed with pointers, and some offline-node APIs still compile under Lyrical but have newer replacements.
+
+Colcon prints stderr even when a package succeeds. The supplied logs ended with `Finished <<< cartographer` and `Finished <<< cartographer_ros`; neither showed compilation errors. This confirms compilation, not full robot runtime validation.
+
+To optionally suppress GCC's ABI notes on the Pi:
+
+```bash
+colcon build --packages-up-to cartographer_ros --cmake-args -DCMAKE_CXX_FLAGS=-Wno-psabi
+```
+
+This sets `CMAKE_CXX_FLAGS`; preserve any other custom flags if you already use them. It does not suppress the separate deprecation warnings.
