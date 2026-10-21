@@ -115,7 +115,7 @@ Node::Node(const double resolution, const double publish_period_sec)
   auto handleSubmapList =
     [this, publish_period_sec](const typename cartographer_ros_msgs::msg::SubmapList::SharedPtr msg) -> void
     {
-    absl::MutexLock locker(&mutex_);
+    absl::MutexLock locker(mutex_);
 
     // We do not do any work if nobody listens.
     if (this->count_publishers(kSubmapListTopic) == 0){
@@ -181,7 +181,7 @@ Node::Node(const double resolution, const double publish_period_sec)
 }
 
 void Node::DrawAndPublish() {
-  absl::MutexLock locker(&mutex_);
+  absl::MutexLock locker(mutex_);
   if (submap_slices_.empty() || last_frame_id_.empty()) {
     return;
   }

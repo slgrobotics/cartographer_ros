@@ -134,14 +134,14 @@ void SubmapsDisplay::onInitialize() {
 
 void SubmapsDisplay::reset() {
   MFDClass::reset();
-  absl::MutexLock locker(&mutex_);
+  absl::MutexLock locker(mutex_);
   client_.reset();
   trajectories_.clear();
   CreateClient();
 }
 
 void SubmapsDisplay::processMessage( const ::cartographer_ros_msgs::msg::SubmapList::ConstSharedPtr msg) {
-  absl::MutexLock locker(&mutex_);
+  absl::MutexLock locker(mutex_);
   map_frame_ = absl::make_unique<std::string>(msg->header.frame_id);
   // In case Cartographer node is relaunched, destroy trajectories from the
   // previous instance.
@@ -228,7 +228,7 @@ void SubmapsDisplay::processMessage( const ::cartographer_ros_msgs::msg::SubmapL
 }
 
 void SubmapsDisplay::update(const float , const float) {
-  absl::MutexLock locker(&mutex_);
+  absl::MutexLock locker(mutex_);
   // Schedule fetching of new submap textures.
   for (const auto& trajectory_by_id : trajectories_) {
     int num_ongoing_requests = 0;
@@ -278,7 +278,7 @@ void SubmapsDisplay::update(const float , const float) {
 }
 
 void SubmapsDisplay::AllEnabledToggled() {
-  absl::MutexLock locker(&mutex_);
+  absl::MutexLock locker(mutex_);
   const bool visible = visibility_all_enabled_->getBool();
   for (auto& trajectory_by_id : trajectories_) {
     trajectory_by_id.second->visibility->setBool(visible);
@@ -286,7 +286,7 @@ void SubmapsDisplay::AllEnabledToggled() {
 }
 
 void SubmapsDisplay::PoseMarkersEnabledToggled() {
-  absl::MutexLock locker(&mutex_);
+  absl::MutexLock locker(mutex_);
   const bool visible = pose_markers_all_enabled_->getBool();
   for (auto& trajectory_by_id : trajectories_) {
     trajectory_by_id.second->pose_markers_visibility->setBool(visible);
@@ -294,7 +294,7 @@ void SubmapsDisplay::PoseMarkersEnabledToggled() {
 }
 
 void SubmapsDisplay::ResolutionToggled() {
-  absl::MutexLock locker(&mutex_);
+  absl::MutexLock locker(mutex_);
   for (auto& trajectory_by_id : trajectories_) {
     for (auto& submap_entry : trajectory_by_id.second->submaps) {
       submap_entry.second->SetSliceVisibility(

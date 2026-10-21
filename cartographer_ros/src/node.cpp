@@ -99,7 +99,7 @@ Node::Node(
   tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_) ;
   map_builder_bridge_.reset(new cartographer_ros::MapBuilderBridge(node_options_, std::move(map_builder), tf_buffer.get()));
 
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (collect_metrics) {
     metrics_registry_ = absl::make_unique<metrics::FamilyFactory>();
     carto::metrics::RegisterAllMetrics(metrics_registry_.get());
@@ -191,7 +191,7 @@ Node::~Node() { FinishAllTrajectories(); }
 bool Node::handleSubmapQuery(
     const cartographer_ros_msgs::srv::SubmapQuery::Request::SharedPtr request,
     cartographer_ros_msgs::srv::SubmapQuery::Response::SharedPtr response) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   map_builder_bridge_->HandleSubmapQuery(request, response);
   return true;
 }
@@ -199,7 +199,7 @@ bool Node::handleSubmapQuery(
 bool Node::handleTrajectoryQuery(
     const cartographer_ros_msgs::srv::TrajectoryQuery::Request::SharedPtr request,
     cartographer_ros_msgs::srv::TrajectoryQuery::Response::SharedPtr response) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   response->status = TrajectoryStateToStatus(
       request->trajectory_id,
       {TrajectoryState::ACTIVE, TrajectoryState::FINISHED,
@@ -214,7 +214,7 @@ bool Node::handleTrajectoryQuery(
 }
 
 void Node::PublishSubmapList() {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   submap_list_publisher_->publish(map_builder_bridge_->GetSubmapList(node_->now()));
 }
 
@@ -247,7 +247,7 @@ void Node::AddSensorSamplers(const int trajectory_id,
 }
 
 void Node::PublishLocalTrajectoryData() {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   for (const auto& entry : map_builder_bridge_->GetLocalTrajectoryData()) {
     const auto& trajectory_data = entry.second;
 
@@ -355,7 +355,7 @@ void Node::PublishLocalTrajectoryData() {
 
 void Node::PublishTrajectoryNodeList() {
   if (trajectory_node_list_publisher_->get_subscription_count() > 0) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     trajectory_node_list_publisher_->publish(
         map_builder_bridge_->GetTrajectoryNodeList(node_->now()));
   }
@@ -363,7 +363,7 @@ void Node::PublishTrajectoryNodeList() {
 
 void Node::PublishLandmarkPosesList() {
   if (landmark_poses_list_publisher_->get_subscription_count() > 0) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     landmark_poses_list_publisher_->publish(
         map_builder_bridge_->GetLandmarkPosesList(node_->now()));
   }
@@ -371,7 +371,7 @@ void Node::PublishLandmarkPosesList() {
 
 void Node::PublishConstraintList() {
   if (constraint_list_publisher_->get_subscription_count() > 0) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     constraint_list_publisher_->publish(map_builder_bridge_->GetConstraintList(node_->now()));
   }
 }
@@ -636,7 +636,7 @@ bool Node::handleStartTrajectory(
 }
 
 void Node::StartTrajectoryWithDefaultTopics(const TrajectoryOptions& options) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   CHECK(ValidateTrajectoryOptions(options));
   AddTrajectory(options);
 }
@@ -665,7 +665,7 @@ int Node::AddOfflineTrajectory(
     const std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>&
         expected_sensor_ids,
     const TrajectoryOptions& options) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   const int trajectory_id =
       map_builder_bridge_->AddTrajectory(expected_sensor_ids, options);
   AddExtrapolator(trajectory_id, options);
@@ -679,7 +679,7 @@ bool Node::handleGetTrajectoryStates(
 
   using TrajectoryState =
       ::cartographer::mapping::PoseGraphInterface::TrajectoryState;
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   response->status.code = ::cartographer_ros_msgs::msg::StatusCode::OK;
   response->trajectory_states.header.stamp = node_->now();
   for (const auto& entry : map_builder_bridge_->GetTrajectoryStates()) {
@@ -709,7 +709,7 @@ bool Node::handleGetTrajectoryStates(
 bool Node::handleFinishTrajectory(
     const cartographer_ros_msgs::srv::FinishTrajectory::Request::SharedPtr request,
     cartographer_ros_msgs::srv::FinishTrajectory::Response::SharedPtr response) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   response->status = FinishTrajectoryUnderLock(request->trajectory_id);
   return true;
 }
@@ -717,7 +717,7 @@ bool Node::handleFinishTrajectory(
 bool Node::handleWriteState(
     const cartographer_ros_msgs::srv::WriteState::Request::SharedPtr request,
     cartographer_ros_msgs::srv::WriteState::Response::SharedPtr response) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (map_builder_bridge_->SerializeState(request->filename,
                                          request->include_unfinished_submaps)) {
     response->status.code = cartographer_ros_msgs::msg::StatusCode::OK;
@@ -735,7 +735,7 @@ bool Node::handleReadMetrics(
     const cartographer_ros_msgs::srv::ReadMetrics::Request::SharedPtr,
     cartographer_ros_msgs::srv::ReadMetrics::Response::SharedPtr response) {
 
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   response->timestamp = node_->now();
   if (!metrics_registry_) {
     response->status.code = cartographer_ros_msgs::msg::StatusCode::UNAVAILABLE;
@@ -749,7 +749,7 @@ bool Node::handleReadMetrics(
 }
 
 void Node::FinishAllTrajectories() {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   for (const auto& entry : map_builder_bridge_->GetTrajectoryStates()) {
     if (entry.second == TrajectoryState::ACTIVE) {
       const int trajectory_id = entry.first;
@@ -760,7 +760,7 @@ void Node::FinishAllTrajectories() {
 }
 
 bool Node::FinishTrajectory(const int trajectory_id) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   return FinishTrajectoryUnderLock(trajectory_id).code ==
          cartographer_ros_msgs::msg::StatusCode::OK;
 }
@@ -788,7 +788,7 @@ void Node::RunFinalOptimization() {
 void Node::HandleOdometryMessage(const int trajectory_id,
                                  const std::string& sensor_id,
                                  const nav_msgs::msg::Odometry::ConstSharedPtr& msg) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (!sensor_samplers_.at(trajectory_id).odometry_sampler.Pulse()) {
     return;
   }
@@ -803,7 +803,7 @@ void Node::HandleOdometryMessage(const int trajectory_id,
 void Node::HandleNavSatFixMessage(const int trajectory_id,
                                   const std::string& sensor_id,
                                   const sensor_msgs::msg::NavSatFix::ConstSharedPtr& msg) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (!sensor_samplers_.at(trajectory_id).fixed_frame_pose_sampler.Pulse()) {
     return;
   }
@@ -814,7 +814,7 @@ void Node::HandleNavSatFixMessage(const int trajectory_id,
 void Node::HandleLandmarkMessage(
     const int trajectory_id, const std::string& sensor_id,
     const cartographer_ros_msgs::msg::LandmarkList::ConstSharedPtr& msg) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (!sensor_samplers_.at(trajectory_id).landmark_sampler.Pulse()) {
     return;
   }
@@ -825,7 +825,7 @@ void Node::HandleLandmarkMessage(
 void Node::HandleImuMessage(const int trajectory_id,
                             const std::string& sensor_id,
                             const sensor_msgs::msg::Imu::ConstSharedPtr& msg) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (!sensor_samplers_.at(trajectory_id).imu_sampler.Pulse()) {
     return;
   }
@@ -840,7 +840,7 @@ void Node::HandleImuMessage(const int trajectory_id,
 void Node::HandleLaserScanMessage(const int trajectory_id,
                                   const std::string& sensor_id,
                                   const sensor_msgs::msg::LaserScan::ConstSharedPtr& msg) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (!sensor_samplers_.at(trajectory_id).rangefinder_sampler.Pulse()) {
     return;
   }
@@ -851,7 +851,7 @@ void Node::HandleLaserScanMessage(const int trajectory_id,
 void Node::HandleMultiEchoLaserScanMessage(
     const int trajectory_id, const std::string& sensor_id,
     const sensor_msgs::msg::MultiEchoLaserScan::ConstSharedPtr& msg) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (!sensor_samplers_.at(trajectory_id).rangefinder_sampler.Pulse()) {
     return;
   }
@@ -862,7 +862,7 @@ void Node::HandleMultiEchoLaserScanMessage(
 void Node::HandlePointCloud2Message(
     const int trajectory_id, const std::string& sensor_id,
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr& msg) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (!sensor_samplers_.at(trajectory_id).rangefinder_sampler.Pulse()) {
     return;
   }
@@ -872,7 +872,7 @@ void Node::HandlePointCloud2Message(
 
 void Node::SerializeState(const std::string& filename,
                           const bool include_unfinished_submaps) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   CHECK(
       map_builder_bridge_->SerializeState(filename, include_unfinished_submaps))
       << "Could not write state.";
@@ -880,7 +880,7 @@ void Node::SerializeState(const std::string& filename,
 
 void Node::LoadState(const std::string& state_filename,
                      const bool load_frozen_state) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   map_builder_bridge_->LoadState(state_filename, load_frozen_state);
 }
 

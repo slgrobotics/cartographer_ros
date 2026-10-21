@@ -239,7 +239,7 @@ MapBuilderBridge::GetLocalTrajectoryData() {
 
     std::shared_ptr<const LocalTrajectoryData::LocalSlamData> local_slam_data;
     {
-      absl::MutexLock lock(&mutex_);
+      absl::MutexLock lock(mutex_);
       if (local_slam_data_.count(trajectory_id) == 0) {
         continue;
       }
@@ -536,7 +536,7 @@ void MapBuilderBridge::OnLocalSlamResult(
       std::make_shared<LocalTrajectoryData::LocalSlamData>(
           LocalTrajectoryData::LocalSlamData{time, local_pose,
                                              std::move(range_data_in_local)});
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   local_slam_data_[trajectory_id] = std::move(local_slam_data);
 }
 

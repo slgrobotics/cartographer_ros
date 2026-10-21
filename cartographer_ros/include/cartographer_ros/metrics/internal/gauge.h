@@ -42,12 +42,12 @@ class Gauge : public ::cartographer::metrics::Gauge {
   void Increment() override { Increment(1.); }
 
   void Set(double value) override {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     value_ = value;
   }
 
   double Value() {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     return value_;
   }
 
@@ -66,7 +66,7 @@ class Gauge : public ::cartographer::metrics::Gauge {
 
  private:
   void Add(const double value) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     value_ += value;
   }
 
