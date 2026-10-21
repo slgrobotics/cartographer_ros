@@ -4,6 +4,7 @@
 > - if *Cartographer* is not present in your `/opt/ros/${ROS_DISTRO}/share/cartographer_ros` you can build it as described below.
 > - ROS2 *Lyrical* seems to distribute `/opt/ros/${ROS_DISTRO}/share/cartographer_ros_msgs` as binaries, but not the rest.
 > - put COLCON_IGNORE file in directories which you don't want to be built.
+> - see https://github.com/slgrobotics/articubot_one/wiki/Jazzy-to-Lyrical-migration for more.
 
 
 ## Cartographer (core library)
