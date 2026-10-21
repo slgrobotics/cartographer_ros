@@ -1,3 +1,7 @@
+Back to [package README](https://github.com/slgrobotics/cartographer_ros/blob/lyrical/README.rst)
+
+-----------------------------
+
 # ROS 2 Lyrical compatibility changes
 
 > **Note:**
@@ -69,9 +73,9 @@ source install/setup.bash
 
 There is no need for `--allow-overriding cartographer_ros_msgs` when the source messages package is ignored.
 
-### Compiler output
+### Compiler *stderr* output
 
-The successful Raspberry Pi builds produced substantial stderr output:
+The successful Raspberry Pi builds produced substantial *stderr* output:
 
 - **GCC ARM ABI notes:** Eigen rotation types trigger messages about parameter passing changing in GCC 10.1 when C++17 is enabled. These are informational notes, not compilation errors.
 
@@ -85,3 +89,7 @@ colcon build --packages-up-to cartographer_ros --cmake-args -DCMAKE_CXX_FLAGS=-W
 ```
 
 This sets `CMAKE_CXX_FLAGS`; preserve any other custom flags if you already use them. It does not suppress other warnings.
+
+-----------------------------
+
+Back to [package README](https://github.com/slgrobotics/cartographer_ros/blob/lyrical/README.rst)
