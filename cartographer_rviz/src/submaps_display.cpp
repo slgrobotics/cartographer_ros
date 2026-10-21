@@ -32,16 +32,16 @@
 #include <rviz_common/properties/bool_property.hpp>
 #include <rviz_common/properties/string_property.hpp>
 #include <rviz_common/message_filter_display.hpp>
-#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <ament_index_cpp/get_package_share_path.hpp>
 
 namespace cartographer_rviz {
 
 namespace {
 
 constexpr int kMaxOnGoingRequestsPerTrajectory = 6;
-constexpr char kMaterialsDirectory[] = "/ogre_media/materials";
-constexpr char kGlsl120Directory[] = "/glsl120";
-constexpr char kScriptsDirectory[] = "/scripts";
+constexpr char kMaterialsDirectory[] = "ogre_media/materials";
+constexpr char kGlsl120Directory[] = "glsl120";
+constexpr char kScriptsDirectory[] = "scripts";
 constexpr char kDefaultTrackingFrame[] = "base_link";
 constexpr char kDefaultSubmapQueryServiceName[] = "/submap_query";
 
@@ -91,14 +91,16 @@ SubmapsDisplay::SubmapsDisplay() : rclcpp::Node("submaps_display") {
                                 "Distance in meters in z-direction beyond "
                                 "which submaps will start to fade out.",
                                 this);
-  const std::string package_path = ament_index_cpp::get_package_share_directory("cartographer_rviz");
+  const auto materials_path =
+      ament_index_cpp::get_package_share_path("cartographer_rviz") /
+      kMaterialsDirectory;
   Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
-      package_path + kMaterialsDirectory, "FileSystem", "cartographer_rviz");
+      materials_path.string(), "FileSystem", "cartographer_rviz");
   Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
-      package_path + kMaterialsDirectory + kGlsl120Directory, "FileSystem",
+      (materials_path / kGlsl120Directory).string(), "FileSystem",
       "cartographer_rviz");
   Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
-      package_path + kMaterialsDirectory + kScriptsDirectory, "FileSystem",
+      (materials_path / kScriptsDirectory).string(), "FileSystem",
       "cartographer_rviz");
   Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 

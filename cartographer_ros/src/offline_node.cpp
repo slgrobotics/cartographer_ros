@@ -37,6 +37,7 @@
 #include "urdf/model.hpp"
 #endif
 #include "rclcpp/exceptions.hpp"
+#include "rclcpp/executors/single_threaded_executor.hpp"
 #include <regex>
 #include <string>
 
@@ -174,6 +175,8 @@ void RunOfflineNode(const MapBuilderFactory& map_builder_factory,
 
   Node node(node_options, std::move(map_builder), tf_buffer, cartographer_offline_node,
             FLAGS_collect_metrics);
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(cartographer_offline_node);
   if (!FLAGS_load_state_filename.empty()) {
     node.LoadState(FLAGS_load_state_filename, FLAGS_load_frozen_state);
   }
@@ -424,7 +427,7 @@ void RunOfflineNode(const MapBuilderFactory& map_builder_factory,
     clock.clock = rclcpp::Time(msg.recv_timestamp);
 #endif
     clock_publisher->publish(clock);
-    rclcpp::spin_some(cartographer_offline_node);
+    executor.spin_some();
 
     if (is_last_message_in_bag) {
       node.FinishTrajectory(trajectory_id);
@@ -473,7 +476,7 @@ void RunOfflineNode(const MapBuilderFactory& map_builder_factory,
   }
   if (FLAGS_keep_running) {
     LOG(INFO) << "Finished processing and waiting for shutdown.";
-    rclcpp::spin(cartographer_offline_node);
+    executor.spin();
   }
 }
 
