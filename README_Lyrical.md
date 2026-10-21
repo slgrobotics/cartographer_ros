@@ -74,14 +74,14 @@ There is no need for `--allow-overriding cartographer_ros_msgs` when the source 
 The successful Raspberry Pi builds produced substantial stderr output:
 
 - **GCC ARM ABI notes:** Eigen rotation types trigger messages about parameter passing changing in GCC 10.1 when C++17 is enabled. These are informational notes, not compilation errors.
-- **Deprecation warnings:** TF2's legacy `.h` headers, Abseil mutex locks constructed with pointers, and some offline-node APIs still compile under Lyrical but have newer replacements.
 
-Colcon prints stderr even when a package succeeds. The supplied logs ended with `Finished <<< cartographer` and `Finished <<< cartographer_ros`; neither showed compilation errors. This confirms compilation, not full robot runtime validation.
+> ABI (Application Binary Interface) defines how compiled functions pass arguments and return values. GCC may report a historical ARM calling-convention correction from GCC 10.1 when compiling Eigen rotation types.
+> These are informational notes, not build errors. Build Cartographer and its ROS integration with the same current compiler to avoid this particular compiler-version mismatch.
 
-To optionally suppress GCC's ABI notes on the Pi:
+Colcon prints stderr even when a package succeeds. To optionally suppress GCC's ABI notes on the Pi:
 
 ```bash
 colcon build --packages-up-to cartographer_ros --cmake-args -DCMAKE_CXX_FLAGS=-Wno-psabi
 ```
 
-This sets `CMAKE_CXX_FLAGS`; preserve any other custom flags if you already use them. It does not suppress the separate deprecation warnings.
+This sets `CMAKE_CXX_FLAGS`; preserve any other custom flags if you already use them. It does not suppress other warnings.
