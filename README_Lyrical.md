@@ -90,18 +90,12 @@ colcon build --packages-up-to cartographer_ros --cmake-args -DCMAKE_CXX_FLAGS=-W
 
 This sets `CMAKE_CXX_FLAGS`; preserve any other custom flags if you already use them. It does not suppress other warnings.
 
------------------------------
-
-Back to [package README](https://github.com/slgrobotics/cartographer_ros/blob/lyrical/README.rst)
-
 ## Initialize a fresh map from IMU heading
 
 The live `cartographer_node` can initialize trajectory 0's local-to-map transform
-before creating its first submap. This avoids a zero-heading startup trajectory
-and the finish/restart workaround used by external orientation initializers.
-Both the core and ROS integration forks must be rebuilt together for this feature.
+before creating its first submap. Cartographer now can avoid a zero-heading startup trajectory.
 
-Add these fields to the Lua `options` table:
+Add these fields to the Lua `options` [table](https://github.com/slgrobotics/articubot_one/blob/lyrical/robots/seggy/config/cartographer_lds_2d.lua#L31):
 
 ```lua
 initialize_map_from_imu = true,
@@ -110,20 +104,27 @@ imu_heading_timeout_sec = 30.0,
 imu_heading_max_age_sec = 1.0,
 ```
 
+> **Note:** This mode is opt-in and supports **fresh 2D maps only**. It rejects loaded state,
+> manual trajectory startup, and conflicting initial poses. For localization in a
+> saved map, leave it disabled and supply a pose in that map's coordinates through
+> the existing trajectory-start service. The offline node does not use this live
+> heading initialization mode.
+
 Keep automatic trajectory startup enabled (the default). Remap `imu` to the
 orientation-bearing IMU topic, for example `imu:=imu/data`. This startup
 subscription is independent of `TRAJECTORY_BUILDER_2D.use_imu_data`: heading can
 be used even when IMU acceleration/angular velocity are not used for SLAM.
 
-Disable the external `initial_pose_serv` for this mode. Keep the robot stationary
+Keep the robot stationary
 until the log reports **Initial map heading**. Only then are the trajectory and
 sensor subscriptions created; scans received while waiting are not inserted.
 The initial map origin remains the startup tracking-frame origin.
 
 The IMU must provide a valid normalized orientation quaternion in an ENU world
 frame, where zero yaw points East and positive yaw turns toward North. A gyro-only
-orientation with arbitrary startup yaw cannot provide compass alignment. The TF
-from the IMU message's frame to the configured `tracking_frame` must be available
+orientation with arbitrary startup yaw cannot provide compass alignment.
+
+The TF from the IMU message's frame to the configured `tracking_frame` must be available
 at the IMU timestamp; its mounting rotation is included in the calculation.
 `imu_heading_offset_rad` rotates the IMU world heading into the desired map
 heading, in radians. An offset alone does not convert a NED quaternion into ENU.
@@ -134,23 +135,6 @@ and a tracking x-axis with no horizontal projection do not start mapping.
 If no valid heading arrives before the timeout, the process exits unsuccessfully
 without creating a trajectory. It does not fall back to zero heading.
 
-This mode is opt-in and supports **fresh 2D maps only**. It rejects loaded state,
-manual trajectory startup, and conflicting initial poses. For localization in a
-saved map, leave it disabled and supply a pose in that map's coordinates through
-the existing trajectory-start service. The offline node does not use this live
-heading initialization mode.
+-----------------------------
 
-Core `TrajectoryBuilderOptions.initial_map_pose` stores an absolute initial
-local-to-map transform, mutually exclusive with the existing relative
-`initial_trajectory_pose`. The first submap is anchored at that transform;
-serialization retains the option and the resulting global submap poses.
-
-After building and sourcing the workspace, run the hardware-free startup checks:
-
-```bash
-python3 src/cartographer_ros/cartographer_ros/test/imu_heading_startup_test.py
-```
-
-The checks use ROS domain 173 and synthetic IMU/scans to verify invalid-input
-handling, mounting rotation, positive/negative heading, the first submap pose,
-timeout, saved-map rejection, default startup, and heading preservation on reload.
+Back to [package README](https://github.com/slgrobotics/cartographer_ros/blob/lyrical/README.rst)
