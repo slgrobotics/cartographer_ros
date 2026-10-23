@@ -52,8 +52,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      # Sphinx emits relative links and needs no Pages metadata/configuration.
+      # The site must already be enabled in repository Settings > Pages.
       - name: Deploy documentation
         id: deployment
         uses: actions/deploy-pages@v4
