@@ -22,6 +22,7 @@ from cartographer_ros_msgs.msg import SubmapList
 from geometry_msgs.msg import TransformStamped
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Imu, LaserScan
+from tf2_msgs.msg import TFMessage
 from tf2_ros import StaticTransformBroadcaster
 
 
@@ -171,6 +172,70 @@ return options''')
             self.assertIsNone(self.process.poll(), self.log())
         self.assertTrue(any(msg.submap for msg in self.submaps), self.log())
         self.assertNotIn('Waiting for initial ENU', self.log())
+
+    def check_elevated_imu_projection(self, provide_odom, project, project_footprint=False):
+        published = 'base_footprint' if provide_odom else 'odom'
+        config = self.config.read_text().replace(
+            'initialize_map_from_imu = true', 'initialize_map_from_imu = false')
+        config = config.replace('tracking_frame = "base_link"', 'tracking_frame = "imu_link"')
+        config = config.replace('published_frame = "base_link"',
+                                'published_frame = "' + published + '"')
+        config = config.replace('provide_odom_frame = true',
+                                'provide_odom_frame = ' + str(provide_odom).lower())
+        config = config.replace('publish_frame_projected_to_2d = false',
+                                'publish_frame_projected_to_2d = ' + str(project).lower())
+        if project_footprint:
+            config = config.replace('return options',
+                                    'options.projection_frame = "base_footprint"\nreturn options')
+        self.config.write_text(config)
+        transforms = []
+        edges = [('base_footprint', 'base_link', .1), ('base_link', 'imu_link', .5)]
+        if not provide_odom:
+            # Model the stationary ground-level odometry supplied by an EKF.
+            edges.append(('odom', 'base_footprint', -.1 if project_footprint else 0.))
+        for parent, child, height in edges:
+            tf = TransformStamped()
+            tf.header.stamp = self.node.get_clock().now().to_msg()
+            tf.header.frame_id = parent
+            tf.child_frame_id = child
+            tf.transform.translation.z = height
+            tf.transform.rotation.w = 1.
+            transforms.append(tf)
+        self.static_tf.sendTransform(transforms)
+        received = []
+        subscription = self.node.create_subscription(
+            TFMessage, '/tf', received.append, qos_profile_sensor_data)
+        self.start()
+        parent = 'odom' if provide_odom else 'map'
+        deadline = time.monotonic() + 8
+        matching = []
+        while not matching and time.monotonic() < deadline:
+            self.pump(.1)
+            self.assertIsNone(self.process.poll(), self.log())
+            matching = [tf for msg in received for tf in msg.transforms
+                        if tf.header.frame_id == parent and tf.child_frame_id == published]
+        self.assertTrue(matching, self.log())
+        # Projection must flatten the published ground frame, not the IMU.
+        expected_z = .1 if project_footprint else (0. if project else -.6)
+        self.assertAlmostEqual(matching[-1].transform.translation.z, expected_z, delta=.01)
+        if project_footprint:
+            # map->odom + odom->base_footprint must put the footprint at z=0.
+            self.assertAlmostEqual(matching[-1].transform.translation.z - .1,
+                                   0., delta=.01)
+        self.node.destroy_subscription(subscription)
+
+    def test_projected_odom_stays_on_ground_with_elevated_imu(self):
+        self.check_elevated_imu_projection(provide_odom=False, project=True)
+
+    def test_projected_footprint_stays_on_ground_with_elevated_imu(self):
+        self.check_elevated_imu_projection(provide_odom=True, project=True)
+
+    def test_footprint_projection_preserves_ekf_base_link_origin(self):
+        self.check_elevated_imu_projection(provide_odom=False, project=True,
+                                          project_footprint=True)
+
+    def test_unprojected_pose_keeps_mounting_height(self):
+        self.check_elevated_imu_projection(provide_odom=False, project=False)
 
     def test_timeout_does_not_start_a_trajectory(self):
         self.config.write_text(self.config.read_text().replace(

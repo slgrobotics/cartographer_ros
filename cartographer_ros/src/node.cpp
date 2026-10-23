@@ -301,18 +301,31 @@ void Node::PublishLocalTrajectoryData() {
         node_options_.use_pose_extrapolator
             ? extrapolator.ExtrapolatePose(now)
             : trajectory_data.local_slam_data->local_pose;
-    const Rigid3d tracking_to_local = [&] {
-      if (trajectory_data.trajectory_options.publish_frame_projected_to_2d) {
-        return carto::transform::Embed3D(
-            carto::transform::Project2D(tracking_to_local_3d));
-      }
-      return tracking_to_local_3d;
-    }();
-
     const Rigid3d tracking_to_map =
-        trajectory_data.local_to_map * tracking_to_local;
+        trajectory_data.local_to_map * tracking_to_local_3d;
 
     if (trajectory_data.published_to_tracking != nullptr) {
+      // Compose the published frame's pose before projecting it. Projecting
+      // the tracking frame first would reintroduce the IMU mounting height
+      // (and tilt) through published_to_tracking.
+      const Rigid3d published_to_local_3d =
+          tracking_to_local_3d * (*trajectory_data.published_to_tracking);
+      const Rigid3d published_to_local = [&] {
+        if (!trajectory_data.trajectory_options.publish_frame_projected_to_2d) {
+          return published_to_local_3d;
+        }
+        const auto& projection_to_tracking =
+            trajectory_data.projection_to_tracking
+                ? *trajectory_data.projection_to_tracking
+                : *trajectory_data.published_to_tracking;
+        const auto projection_to_local = carto::transform::Embed3D(
+            carto::transform::Project2D(
+                tracking_to_local_3d * projection_to_tracking));
+        // Preserve the published frame's offset from the ground/projection
+        // frame. In particular, an EKF may place odom z=0 at base_link.
+        return projection_to_local * projection_to_tracking.inverse() *
+               (*trajectory_data.published_to_tracking);
+      }();
       if (node_options_.publish_to_tf) {
         if (trajectory_data.trajectory_options.provide_odom_frame) {
           std::vector<geometry_msgs::msg::TransformStamped> stamped_transforms;
@@ -329,7 +342,7 @@ void Node::PublishLocalTrajectoryData() {
           stamped_transform.child_frame_id =
               trajectory_data.trajectory_options.published_frame;
           stamped_transform.transform = ToGeometryMsgTransform(
-              tracking_to_local * (*trajectory_data.published_to_tracking));
+              published_to_local);
           stamped_transforms.push_back(stamped_transform);
 
           tf_broadcaster_->sendTransform(stamped_transforms);
@@ -338,7 +351,7 @@ void Node::PublishLocalTrajectoryData() {
           stamped_transform.child_frame_id =
               trajectory_data.trajectory_options.published_frame;
           stamped_transform.transform = ToGeometryMsgTransform(
-              tracking_to_map * (*trajectory_data.published_to_tracking));
+              trajectory_data.local_to_map * published_to_local);
           tf_broadcaster_->sendTransform(stamped_transform);
         }
       }

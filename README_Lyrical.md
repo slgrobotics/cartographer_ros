@@ -90,6 +90,27 @@ colcon build --packages-up-to cartographer_ros --cmake-args -DCMAKE_CXX_FLAGS=-W
 
 This sets `CMAKE_CXX_FLAGS`; preserve any other custom flags if you already use them. It does not suppress other warnings.
 
+## Ground plane and an elevated IMU
+
+Keep `tracking_frame = "imu_link"` when using IMU data: Cartographer requires
+its tracking frame to be colocated with the IMU. To keep a published ground-level
+frame planar, set `publish_frame_projected_to_2d = true`. Projection is applied
+after composing the tracking-to-published-frame offset, rather than flattening
+the IMU frame and then reintroducing its mounting height.
+
+With an EKF publishing `odom -> base_link`, use `published_frame = "odom"` and
+`provide_odom_frame = false`. Set `projection_frame = "base_footprint"` to anchor
+the ground plane independently of the EKF's choice of odom z=0. This preserves
+the EKF's published TF while composing a corrected `map -> odom` transform.
+If Cartographer owns odometry TF, `published_frame = "base_footprint"` and
+`provide_odom_frame = true` produce a planar footprint pose. Do not let another
+node publish that same TF edge. Publishing `base_link` as a projected frame puts
+base_link itself at z=0, which need not be the ground plane for your robot.
+
+This affects live pose/TF publication, not stored submap coordinates. Restart
+Cartographer and dependent visualization/navigation nodes after rebuilding; an
+RViz grid offset should not be used to compensate for an incorrect TF chain.
+
 ## Initialize a fresh map from IMU heading
 
 The live `cartographer_node` can initialize trajectory 0's local-to-map transform

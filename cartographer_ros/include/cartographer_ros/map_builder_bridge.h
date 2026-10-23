@@ -62,6 +62,7 @@ class MapBuilderBridge {
     std::shared_ptr<const LocalSlamData> local_slam_data;
     cartographer::transform::Rigid3d local_to_map;
     std::unique_ptr<cartographer::transform::Rigid3d> published_to_tracking;
+    std::unique_ptr<cartographer::transform::Rigid3d> projection_to_tracking;
     TrajectoryOptions trajectory_options;
   };
 

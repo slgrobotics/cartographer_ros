@@ -248,12 +248,22 @@ MapBuilderBridge::GetLocalTrajectoryData() {
 
     // Make sure there is a trajectory with 'trajectory_id'.
     CHECK_EQ(trajectory_options_.count(trajectory_id), 1);
+    std::unique_ptr<cartographer::transform::Rigid3d> projection_to_tracking;
+    const auto& options = trajectory_options_.at(trajectory_id);
+    if (options.publish_frame_projected_to_2d &&
+        !options.projection_frame.empty() &&
+        options.projection_frame != options.published_frame) {
+      projection_to_tracking = sensor_bridge.tf_bridge().LookupToTracking(
+          local_slam_data->time, options.projection_frame);
+      if (!projection_to_tracking) continue;
+    }
     local_trajectory_data[trajectory_id] = {
         local_slam_data,
         map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id),
         sensor_bridge.tf_bridge().LookupToTracking(
             local_slam_data->time,
             trajectory_options_[trajectory_id].published_frame),
+        std::move(projection_to_tracking),
         trajectory_options_[trajectory_id]};
   }
   return local_trajectory_data;
