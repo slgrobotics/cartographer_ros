@@ -92,24 +92,21 @@ This sets `CMAKE_CXX_FLAGS`; preserve any other custom flags if you already use 
 
 ## Ground plane and an elevated IMU
 
-Keep `tracking_frame = "imu_link"` when using IMU data: Cartographer requires
-its tracking frame to be colocated with the IMU. To keep a published ground-level
-frame planar, set `publish_frame_projected_to_2d = true`. Projection is applied
-after composing the tracking-to-published-frame offset, rather than flattening
-the IMU frame and then reintroducing its mounting height.
-
-With an EKF publishing `odom -> base_link`, use `published_frame = "odom"` and
-`provide_odom_frame = false`. Set `projection_frame = "base_footprint"` to anchor
-the ground plane independently of the EKF's choice of odom z=0. This preserves
-the EKF's published TF while composing a corrected `map -> odom` transform.
-If Cartographer owns odometry TF, `published_frame = "base_footprint"` and
-`provide_odom_frame = true` produce a planar footprint pose. Do not let another
-node publish that same TF edge. Publishing `base_link` as a projected frame puts
-base_link itself at z=0, which need not be the ground plane for your robot.
-
-This affects live pose/TF publication, not stored submap coordinates. Restart
-Cartographer and dependent visualization/navigation nodes after rebuilding; an
-RViz grid offset should not be used to compensate for an incorrect TF chain.
+When using IMU data, Cartographer requires its tracking frame to be colocated with the IMU:
+```
+tracking_frame = "imu_link",
+```
+To anchor the ground plane at base_footprint, independently of the EKF’s choice of odom z=0:
+```
+publish_frame_projected_to_2d = true,
+projection_frame = "base_footprint",
+```
+Choose TF ownership:
+- With an EKF publishing `odom → base_link`:
+  - use `published_frame = "odom"` and `provide_odom_frame = false`
+- With Cartographer providing odometry TF:
+  - use `published_frame = "base_footprint"` and `provide_odom_frame = true`
+  - disable competing odometry TF publishers.
 
 ## Initialize a fresh map from IMU heading
 
